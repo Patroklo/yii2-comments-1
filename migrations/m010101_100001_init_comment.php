@@ -34,6 +34,8 @@ class m010101_100001_init_comment extends Migration
 
         $this->createIndex('entity_index', '{{%Comment}}', 'entity');
         $this->createIndex('status_index', '{{%Comment}}', 'status');
+        $this->createIndex('complete_entity_index', '{{%Comment}}', ['entity', 'entityId']);
+
     }
 
     /**
