@@ -72,7 +72,8 @@ class Comment extends Widget
      *
      */
     public $nestedBehavior = TRUE;
-
+    
+    
     /**
      * Initializes the object.
      * This method is invoked at the end of the constructor after the object is initialized with the
@@ -134,8 +135,7 @@ class Comment extends Widget
         // check for permissions
         $commentModel->entity = $this->entity;
         $commentModel->entityId = $this->entityId;
-
-
+        
         //Encrypt entity and entityId values
         $encryptedEntity = urlencode(Yii::$app->getSecurity()->encryptByKey(Json::encode([
             'entity' => $this->entity,
@@ -144,7 +144,8 @@ class Comment extends Widget
             'entityIdAttribute' => $this->entityIdAttribute,
             'clientOptions' => $this->clientOptions,
             'pjax' => $this->pjax,
-            'showDeletedComments' => $this->showDeletedComments
+            'showDeletedComments' => $this->showDeletedComments,
+            'nestedBehavior' => $this->nestedBehavior
         ]), $module::$name));
 
         return $this->render('index', [
@@ -155,5 +156,4 @@ class Comment extends Widget
             'pjax' => $this->pjax
         ]);
     }
-
 }
