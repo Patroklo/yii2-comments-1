@@ -1,7 +1,6 @@
 <?php
 
 use yii\helpers\Html;
-use yii\imperavi\Widget;
 use yii\widgets\ActiveForm;
 use yii2mod\comments\models\enums\CommentStatus;
 
@@ -18,12 +17,16 @@ $this->params['breadcrumbs'][] = Yii::t('app', 'Update');
 
     <div class="comment-form">
         <?php $form = ActiveForm::begin(); ?>
-        <?php echo $form->field($model, 'content')->widget(Widget::className(), [
-            'options' => [
-                'minHeight' => 300,
-                'replaceDivs' => true,
-                'paragraphize' => false,
-            ],
+
+        <?php
+        if (!is_null($model->anonymousUsername))
+        {
+            echo $form->field($model, 'anonymousUsername')->textInput();
+        }
+
+        ?>
+
+        <?php echo $form->field($model, 'content')->textarea([
             'id' => 'content',
         ]);
         ?>

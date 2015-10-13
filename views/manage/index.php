@@ -2,10 +2,8 @@
 
 use yii\grid\GridView;
 use yii\helpers\Html;
-use yii\helpers\Json;
 use yii\widgets\Pjax;
 use yii2mod\comments\models\enums\CommentStatus;
-use yii2mod\editable\EditableColumn;
 
 /* @var $this yii\web\View */
 /* @var $dataProvider yii\data\ActiveDataProvider */
@@ -18,7 +16,7 @@ $this->params['breadcrumbs'][] = $this->title;
 
 
     <h1><?php echo Html::encode($this->title) ?></h1>
-    <?php Pjax::begin(['enablePushState' => false, 'timeout' => 5000]); ?>
+    <?php Pjax::begin(['enablePushState' => FALSE, 'timeout' => 5000]); ?>
     <?php echo GridView::widget([
         'dataProvider' => $dataProvider,
         'filterModel' => $searchModel,
@@ -30,41 +28,33 @@ $this->params['breadcrumbs'][] = $this->title;
             [
                 'attribute' => 'content',
                 'contentOptions' => ['style' => 'max-width: 350px;'],
-                'value' => function ($model) {
+                'value' => function ($model)
+                {
                     return \yii\helpers\StringHelper::truncate($model->content, 100);
                 }
             ],
             [
                 'attribute' => 'createdBy',
-                'value' => function ($model) {
+                'value' => function ($model)
+                {
                     return $model->getAuthorName();
                 },
-                'filter' => $commentModel::getListAuthorsNames(),
-                'filterInputOptions' => ['prompt' => Yii::t('app', 'Select Author'), 'class' => 'form-control'],
             ],
             [
-                'class' => EditableColumn::className(),
                 'attribute' => 'status',
-                'url' => ['edit-comment'],
-                'value' => function ($model) {
-                    return CommentStatus::getLabel($model->status);
-                },
-                'type' => 'select',
-                'editableOptions' => function ($model) {
-                    return [
-                        'source' => Json::encode(CommentStatus::listData()),
-                        'value' => $model->status,
-                    ];
-                },
-                'filter' => CommentStatus::listData(),
-                'filterInputOptions' => ['prompt' => Yii::t('app', 'Select Status'), 'class' => 'form-control'],
+                'filter' => array("1" => "Active", "2" => "Deleted"),
+                'value' => function ($model)
+                {
+                    return ($model->status == 1 ? 'Active' : 'Deleted');
+                }
             ],
             [
                 'attribute' => 'createdAt',
-                'value' => function ($model) {
+                'value' => function ($model)
+                {
                     return Yii::$app->formatter->asDatetime($model->createdAt);
                 },
-                'filter' => false,
+                'filter' => FALSE,
             ],
             [
                 'header' => Yii::t('app', 'Actions'),

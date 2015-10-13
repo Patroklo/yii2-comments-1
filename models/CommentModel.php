@@ -360,7 +360,6 @@ class CommentModel extends ActiveRecord
         if (is_null($this->createdBy)) {
             return $this->anonymousUsername;
         }
-
         return $this->author->username;
     }
 

@@ -57,7 +57,7 @@ class ManageController extends Controller
             'edit-comment' => [
                 'class' => EditableAction::className(),
                 'modelClass' => CommentModel::className(),
-                'forceCreate' => false
+                'forceCreate' => FALSE
             ]
         ];
     }
@@ -73,9 +73,9 @@ class ManageController extends Controller
         $commentSearchModelData = $module->model('commentSearch');
         /** @var CommentSearchModel $searchModel */
         $searchModel = Yii::createObject($commentSearchModelData);
-        
+
         $dataProvider = $searchModel->search(Yii::$app->request->queryParams);
-        
+
         $commentModelData = $module->model('comment');
         /** @var CommentModel $commentModel */
         $commentModel = Yii::createObject($commentModelData);
@@ -97,8 +97,18 @@ class ManageController extends Controller
     {
         $model = $this->findModel($id);
 
-        if ($model->load(Yii::$app->request->post()) && $model->save()) {
+        // if the model has an anonymousUsername value
+        // we will consider it as an anonymous message
+        if (!is_null($model->anonymousUsername))
+        {
+            $model->scenario = $model::SCENARIO_ANONYMOUS;
+        }
+
+
+        if ($model->load(Yii::$app->request->post()) && $model->save())
+        {
             Yii::$app->session->setFlash('success', Yii::t('app', 'Comment has been saved.'));
+
             return $this->redirect(['index']);
         }
 
@@ -106,19 +116,6 @@ class ManageController extends Controller
             'model' => $model,
         ]);
 
-    }
-
-    /**
-     * Deletes an existing CommentModel model.
-     * If deletion is successful, the browser will be redirected to the 'index' page.
-     * @param integer $id
-     * @return mixed
-     */
-    public function actionDelete($id)
-    {
-        $this->findModel($id)->delete();
-        Yii::$app->session->setFlash('success', Yii::t('app', 'Comment has been deleted.'));
-        return $this->redirect(['index']);
     }
 
     /**
@@ -135,10 +132,27 @@ class ManageController extends Controller
         $commentModelData = $module->model('comment');
         /** @var CommentModel $commentModel */
         $commentModel = Yii::createObject($commentModelData);
-        if (($model = $commentModel::findOne($id)) !== null) {
+        if (($model = $commentModel::findOne($id)) !== NULL)
+        {
             return $model;
-        } else {
+        }
+        else
+        {
             throw new NotFoundHttpException(Yii::t('app', 'The requested page does not exist.'));
         }
+    }
+
+    /**
+     * Deletes an existing CommentModel model.
+     * If deletion is successful, the browser will be redirected to the 'index' page.
+     * @param integer $id
+     * @return mixed
+     */
+    public function actionDelete($id)
+    {
+        $this->findModel($id)->delete();
+        Yii::$app->session->setFlash('success', Yii::t('app', 'Comment has been deleted.'));
+
+        return $this->redirect(['index']);
     }
 }
