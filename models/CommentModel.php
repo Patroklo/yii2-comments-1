@@ -242,6 +242,8 @@ class CommentModel extends ActiveRecord
      *
      * @param string $entity model class id
      * @param int $entityId model id
+     * @param boolean $showDeletedComments
+     * @param boolean $nestedBehavior
      * @param null|int $maxLevel
      * @return array|\yii\db\ActiveRecord[] Comments tree
      */
@@ -257,7 +259,7 @@ class CommentModel extends ActiveRecord
         if ($showDeletedComments === FALSE) {
             $query->andWhere(['!=', 'status', CommentStatus::DELETED]);
         }
-        $models = $query->orderBy(['parentId' => SORT_ASC, 'createdAt' => SORT_ASC])->all();
+        $models = $query->orderBy(['createdAt' => SORT_ASC, 'parentId' => SORT_ASC])->all();
 
         if (!empty($models) and $nestedBehavior === TRUE) {
             $models = self::buildTree($models);
@@ -275,6 +277,7 @@ class CommentModel extends ActiveRecord
      */
     protected static function buildTree(&$data, $rootID = 0)
     {
+        reset($data);
         $tree = [];
         foreach ($data as $id => $node) {
             if ($node->parentId == $rootID) {
@@ -283,6 +286,7 @@ class CommentModel extends ActiveRecord
                 $tree[] = $node;
             }
         }
+
         return $tree;
     }
 
