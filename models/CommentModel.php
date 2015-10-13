@@ -20,6 +20,7 @@ use yii2mod\comments\Module;
  * @property integer $entityId
  * @property integer $parentId
  * @property string $content
+ * @property integer $anonymousUsername
  * @property integer $createdBy
  * @property integer $updatedBy
  * @property integer $status
@@ -35,6 +36,25 @@ class CommentModel extends ActiveRecord
      */
     protected $_children;
 
+
+    const SCENARIO_LOGGED = 'logged';
+    const SCENARIO_ANONYMOUS = 'anonymous';
+
+
+    /**
+     * @inheritdoc
+     */
+    public function init()
+    {
+        parent::init();
+
+        if (Yii::$app->getUser()->getIsGuest()) {
+            $this->scenario = self::SCENARIO_ANONYMOUS;
+        } else {
+            $this->scenario = self::SCENARIO_LOGGED;
+        }
+    }
+
     /**
      * Declares the name of the database table associated with this AR class.
      * @return string the table name
@@ -45,6 +65,19 @@ class CommentModel extends ActiveRecord
     }
 
     /**
+     * @inheritdoc
+     * @return array
+     */
+    public function scenarios()
+    {
+        return [
+            self::SCENARIO_LOGGED => ['content', 'entity', 'entityId', 'parentId', 'createdBy', 'updatedBy', 'status', 'createdAt', 'updatedAt', 'level'],
+            self::SCENARIO_ANONYMOUS => ['content', 'entity', 'entityId', 'parentId', 'anonymousUsername', 'createdBy', 'updatedBy', 'status', 'createdAt', 'updatedAt', 'level'],
+        ];
+    }
+
+
+    /**
      * Returns the validation rules for attributes.
      * @return array validation rules
      */
@@ -52,7 +85,8 @@ class CommentModel extends ActiveRecord
     {
         return [
             [['entity', 'entityId', 'content'], 'required'],
-            [['content', 'entity'], 'string'],
+            [['anonymousUsername'], 'required', 'on' => self::SCENARIO_ANONYMOUS],
+            [['content', 'entity', 'anonymousUsername'], 'string'],
             ['parentId', 'validateParentID'],
             [['entityId', 'parentId', 'createdBy', 'updatedBy', 'status', 'createdAt', 'updatedAt', 'level'], 'integer'],
         ];
@@ -67,7 +101,7 @@ class CommentModel extends ActiveRecord
         if ($this->{$attribute} !== null) {
             $comment = self::find()->where(['id' => $this->{$attribute}, 'entity' => $this->entity, 'entityId' => $this->entityId])->active()->exists();
             if ($comment === false) {
-                $this->addError('content', 'Oops, something went wrong. Please try again later.');
+                $this->addError('content', Yii::t('app', 'Oops, something went wrong. Please try again later.'));
             }
         }
     }
@@ -146,6 +180,54 @@ class CommentModel extends ActiveRecord
     }
 
     /**
+     * @return bool
+     */
+    public static function canCreate()
+    {
+        /* @var $module Module */
+        $module = Yii::$app->getModule(Module::$name);
+
+        return $module->useRbac === true
+            ? \Yii::$app->getUser()->can(CommentPermission::CREATE)
+            : true;
+    }
+
+    /**
+     * @return bool
+     */
+    public function canUpdate()
+    {
+        if (Yii::$app->getUser()->getIsGuest()) {
+            return FALSE;
+        }
+
+        /* @var $module Module */
+        $module = Yii::$app->getModule(Module::$name);
+
+        return $module->useRbac === true
+            ? \Yii::$app->getUser()->can(CommentPermission::UPDATE) || \Yii::$app->getUser()->can(CommentPermission::UPDATE_OWN, ['Comment' => $this])
+            : $this->createdBy === \Yii::$app->get('user')->id;
+    }
+
+    /**
+     * @return bool
+     */
+    public function canDelete()
+    {
+        if (Yii::$app->getUser()->getIsGuest()) {
+            return FALSE;
+        }
+
+        /* @var $module Module */
+        $module = Yii::$app->getModule(Module::$name);
+
+        return $module->useRbac === true
+            ? \Yii::$app->getUser()->can(CommentPermission::DELETE) || \Yii::$app->getUser()->can(CommentPermission::DELETE_OWN, ['Comment' => $this])
+            : $this->createdBy === \Yii::$app->get('user')->id;
+    }
+
+
+    /**
      * Author relation
      * @return \yii\db\ActiveQuery
      */
@@ -158,12 +240,12 @@ class CommentModel extends ActiveRecord
     /**
      * Get comments tree.
      *
-     * @param $entity model class id
-     * @param $entityId model id
-     * @param null $maxLevel
+     * @param string $entity model class id
+     * @param int $entityId model id
+     * @param null|int $maxLevel
      * @return array|\yii\db\ActiveRecord[] Comments tree
      */
-    public static function getTree($entity, $entityId, $maxLevel = null)
+    public static function getTree($entity, $entityId, $showDeletedComments, $nestedBehavior, $maxLevel = null)
     {
         $query = self::find()->where([
             'entityId' => $entityId,
@@ -172,10 +254,15 @@ class CommentModel extends ActiveRecord
         if ($maxLevel > 0) {
             $query->andWhere(['<=', 'level', $maxLevel]);
         }
+        if ($showDeletedComments === FALSE) {
+            $query->andWhere(['!=', 'status', CommentStatus::DELETED]);
+        }
         $models = $query->orderBy(['parentId' => SORT_ASC, 'createdAt' => SORT_ASC])->all();
-        if (!empty($models)) {
+
+        if (!empty($models) and $nestedBehavior === TRUE) {
             $models = self::buildTree($models);
         }
+
         return $models;
     }
 
@@ -270,6 +357,10 @@ class CommentModel extends ActiveRecord
      */
     public function getAuthorName()
     {
+        if (is_null($this->createdBy)) {
+            return $this->anonymousUsername;
+        }
+
         return $this->author->username;
     }
 
@@ -278,8 +369,12 @@ class CommentModel extends ActiveRecord
      * @param string $deletedCommentText
      * @return string
      */
-    public function getContent($deletedCommentText = 'Comment was deleted.')
+    public function getContent($deletedCommentText = Null)
     {
+        if (is_null($deletedCommentText)) {
+            $deletedCommentText = Yii::t('app', 'Comment was deleted.');
+        }
+
         return $this->isDeleted ? $deletedCommentText : Yii::$app->formatter->asNtext($this->content);
     }
 
@@ -291,6 +386,11 @@ class CommentModel extends ActiveRecord
     public function getAvatar($imgOptions = [])
     {
         $imgOptions = ArrayHelper::merge($imgOptions, ['class' => 'img-responsive']);
+
+        if (is_null($this->createdBy)) {
+            return Html::img("http://gravatar.com/avatar/1/?s=50", $imgOptions);
+        }
+
         return Html::img("http://gravatar.com/avatar/{$this->author->id}/?s=50", $imgOptions);
     }
 

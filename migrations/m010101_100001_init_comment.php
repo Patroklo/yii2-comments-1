@@ -25,8 +25,9 @@ class m010101_100001_init_comment extends Migration
             'content' => Schema::TYPE_TEXT . ' NOT NULL',
             'parentId' => Schema::TYPE_INTEGER . ' DEFAULT NULL',
             'level' => 'TINYINT(3) NOT NULL DEFAULT 1',
-            'createdBy' => Schema::TYPE_INTEGER . ' NOT NULL',
-            'updatedBy' => Schema::TYPE_INTEGER . ' NOT NULL',
+            'anonymousUsername' => Schema::TYPE_STRING,
+            'createdBy' => Schema::TYPE_INTEGER,
+            'updatedBy' => Schema::TYPE_INTEGER,
             'status' => 'TINYINT(2) NOT NULL DEFAULT 1',
             'createdAt' => Schema::TYPE_INTEGER . ' NOT NULL',
             'updatedAt' => Schema::TYPE_INTEGER . ' NOT NULL',
@@ -35,7 +36,6 @@ class m010101_100001_init_comment extends Migration
         $this->createIndex('entity_index', '{{%Comment}}', 'entity');
         $this->createIndex('status_index', '{{%Comment}}', 'status');
         $this->createIndex('complete_entity_index', '{{%Comment}}', ['entity', 'entityId']);
-
     }
 
     /**

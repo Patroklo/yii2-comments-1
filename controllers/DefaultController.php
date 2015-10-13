@@ -6,6 +6,7 @@ use Yii;
 use yii\filters\VerbFilter;
 use yii\helpers\Json;
 use yii\web\Controller;
+use yii\web\NotFoundHttpException;
 use yii\web\Response;
 use yii\widgets\ActiveForm;
 use yii2mod\comments\models\CommentModel;
@@ -37,33 +38,83 @@ class DefaultController extends Controller
 
     /**
      * Create comment.
-     * @param $entity string ecrypt entity
      * @return array|null|Response
      */
-    public function actionCreate($entity)
+    public function actionCreate()
     {
+        return $this->saveComment();
+    }
+
+    /**
+     * Update comment page
+     *
+     * @param $comment_id
+     * @return array|string|Response
+     * @throws NotFoundHttpException
+     * @throws \Exception
+     */
+    public function actionUpdate($comment_id)
+    {
+        return $this->saveComment($comment_id);
+    }
+
+
+    public function saveComment($commentId = NULL)
+    {
+        if (is_null($commentId)) {
+            $actionType = 'insert';
+        } else {
+            $actionType = 'update';
+        }
+
+        $entity = urldecode(Yii::$app->getRequest()->post('entityData'));
+
         /* @var $module Module */
         $module = Yii::$app->getModule(Module::$name);
-        $commentModelClass = $module->commentModelClass;
+
         $decryptEntity = Yii::$app->getSecurity()->decryptByKey($entity, $module::$name);
-        if ($decryptEntity !== false) {
+
+        $entityData = [];
+
+        if ($decryptEntity !== FALSE) {
             $entityData = Json::decode($decryptEntity);
-            $model = new $commentModelClass([
-                'entity' => $entityData['entity'],
-                'entityId' => $entityData['entityId'],
-            ]);
+
+            if ($actionType == 'update') {
+                $model = $this->findModel($commentId);
+            } else {
+                $commentModelData = $module->model('comment',
+                    [
+                        'entity' => $entityData['entity'],
+                        'entityId' => $entityData['entityId']
+                    ]);
+
+                /** @var CommentModel $model */
+                $model = Yii::createObject($commentModelData);
+            }
+
             $load = $model->load(Yii::$app->request->post());
-            if (Yii::$app->request->isAjax && $load) {
+
+            if (Yii::$app->request->isAjax && $load && !Yii::$app->request->isPjax) {
                 Yii::$app->response->format = Response::FORMAT_JSON;
+
                 return ActiveForm::validate($model);
             }
             if ($load && $model->save()) {
-                Yii::$app->session->setFlash('success', 'Comment has been added.');
-                return $this->redirect(Yii::$app->request->referrer);
+                if ($actionType == 'update') {
+                    Yii::$app->getSession()->setFlash('success', Yii::t('app', 'Comment has been updated.'));
+                } else {
+                    Yii::$app->getSession()->setFlash('success', Yii::t('app', 'Comment has been created.'));
+                }
             }
+        } else {
+            Yii::$app->getSession()->setFlash('error', Yii::t('app', 'Oops, something went wrong. Please try again later.'));
         }
-        Yii::$app->session->setFlash('error', 'Oops, something went wrong. Please try again later.');
-        return $this->redirect(Yii::$app->request->referrer);
+
+        if (Yii::$app->request->isPjax && !empty($entityData)) {
+            return \yii2mod\comments\widgets\Comment::widget($entityData);
+        } else {
+            return $this->redirect(Yii::$app->request->referrer);
+        }
     }
 
     /**
@@ -75,10 +126,11 @@ class DefaultController extends Controller
     public function actionDelete($id)
     {
         if ($this->findModel($id)->deleteComment()) {
-            return 'Comment was deleted.';
+            return Yii::t('app', 'Comment was deleted.');
         } else {
             Yii::$app->response->setStatusCode(500);
-            return 'Comment has not been deleted. Please try again!';
+
+            return Yii::t('app', 'Comment has not been deleted. Please try again!');
         }
     }
 
@@ -91,12 +143,15 @@ class DefaultController extends Controller
      */
     protected function findModel($id)
     {
-        /** @var Comment $model */
-        $commentModelClass = Yii::$app->getModule(Module::$name)->commentModelClass;
-        if (($model = $commentModelClass::findOne($id)) !== null) {
+        /* @var $module Module */
+        $module = Yii::$app->getModule(Module::$name);
+        $commentModelData = $module->model('comment');
+        /** @var CommentModel $commentModel */
+        $commentModel = Yii::createObject($commentModelData);
+        if (($model = $commentModel::findOne($id)) !== NULL) {
             return $model;
         } else {
-            throw new NotFoundHttpException('The requested page does not exist.');
+            throw new NotFoundHttpException(Yii::t('app', 'The requested page does not exist.'));
         }
     }
 }

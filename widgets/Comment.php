@@ -6,7 +6,7 @@ use Yii;
 use yii\base\InvalidConfigException;
 use yii\base\Widget;
 use yii\helpers\Json;
-use yii2mod\comments\CommentAsset;
+use yii2mod\comments\models\CommentModel;
 use yii2mod\comments\Module;
 
 /**
@@ -36,16 +36,73 @@ class Comment extends Widget
     public $clientOptions = [];
 
     /**
+     * @var string
+     */
+    public $entity;
+
+    /**
+     * @var int
+     */
+    public $entityId;
+
+    /**
+     * @var bool
+     *
+     * Defines if the comment system uses pjax to insert / edit / delete the comments
+     */
+    public $pjax = FALSE;
+
+    /**
+     * @var bool
+     *
+     * Shows or hides the deleted comments in the widget. Also changes the default behavior
+     * of the delete comment button.
+     *
+     * Warning: if it's set to false and the widget has nestedBehavior activated, the
+     * answers to deleted comments won't be shown.
+     */
+    public $showDeletedComments = TRUE;
+
+
+    /**
+     * @var bool
+     *
+     * While true, the comments will have a nested behavior in which answers will be shown
+     * in a nested way in the _list view. If not, all will have the same hierarchy level
+     *
+     */
+    public $nestedBehavior = TRUE;
+
+    /**
      * Initializes the object.
      * This method is invoked at the end of the constructor after the object is initialized with the
      * given configuration.
      */
     public function init()
     {
-        if ($this->model === null) {
-            throw new InvalidConfigException('The "model" property must be set.');
+        if ($this->model === null && ($this->entity === null || $this->entityId === null))
+        {
+            throw new InvalidConfigException(Yii::t('app', 'The "model" property must be set.'));
         }
         $this->registerAssets();
+    }
+
+    /**
+     * Register assets.
+     */
+    protected function registerAssets()
+    {
+        // If we have to hide the deleted comments, we will define the javascript
+        // to destroy the comment instead of the default functionality.
+        if ($this->showDeletedComments === FALSE)
+        {
+            $this->clientOptions['deleteComment'] = TRUE;
+        }
+
+        $view = $this->getView();
+        $options = Json::encode($this->clientOptions);
+        CommentAsset::register($view);
+        $view->registerJs('jQuery.comment(' . $options . ');');
     }
 
     /**
@@ -56,39 +113,47 @@ class Comment extends Widget
     {
         /* @var $module Module */
         $module = Yii::$app->getModule(Module::$name);
-        //Get comment model class from `comment` Module
-        $commentModelClass = $module->commentModelClass;
-        //Get entity from widget and hash it.
-        $entity = $this->model;
-        $entityId = $entity->{$this->entityIdAttribute};
-        $entity = hash('crc32', $entity::className());
-        //Get comment tree by entity and entityId
-        $comments = $commentModelClass::getTree($entity, $entityId, $this->maxLevel);
+        $commentModelData = $module->model('comment');
+
         //Create comment model
-        $commentModel = Yii::createObject($commentModelClass);
+        /** @var CommentModel $commentModel */
+        $commentModel = Yii::createObject($commentModelData);
+
+        //Get entity from widget and hash it.
+        if ($this->model)
+        {
+            $entityModel = $this->model;
+            $this->entityId = $entityModel->{$this->entityIdAttribute};
+            $this->entity = $commentModel::hashEntityClass($entityModel::className());
+        }
+
+        //Get comment tree by entity and entityId
+        $comments = $commentModel::getTree($this->entity, $this->entityId, $this->showDeletedComments, $this->nestedBehavior, $this->maxLevel);
+
+        // Add the basic data into the CommentModel in case we need it to
+        // check for permissions
+        $commentModel->entity = $this->entity;
+        $commentModel->entityId = $this->entityId;
+
+
         //Encrypt entity and entityId values
-        $encryptedEntity = Yii::$app->getSecurity()->encryptByKey(Json::encode([
-            'entity' => $entity,
-            'entityId' => $entityId
-        ]), $module::$name);
+        $encryptedEntity = urlencode(Yii::$app->getSecurity()->encryptByKey(Json::encode([
+            'entity' => $this->entity,
+            'entityId' => $this->entityId,
+            'maxLevel' => $this->maxLevel,
+            'entityIdAttribute' => $this->entityIdAttribute,
+            'clientOptions' => $this->clientOptions,
+            'pjax' => $this->pjax,
+            'showDeletedComments' => $this->showDeletedComments
+        ]), $module::$name));
 
         return $this->render('index', [
             'comments' => $comments,
             'commentModel' => $commentModel,
             'maxLevel' => $this->maxLevel,
-            'encryptedEntity' => $encryptedEntity
+            'encryptedEntity' => $encryptedEntity,
+            'pjax' => $this->pjax
         ]);
-    }
-
-    /**
-     * Register assets.
-     */
-    protected function registerAssets()
-    {
-        $view = $this->getView();
-        $options = Json::encode($this->clientOptions);
-        CommentAsset::register($view);
-        $view->registerJs('jQuery.comment(' . $options . ');');
     }
 
 }

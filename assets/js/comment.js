@@ -24,7 +24,9 @@
         // Comment content selector
         contentSelector: '.comment-body',
         // Cancel reply button selector
-        cancelReplyBtnSelector: '#cancel-reply'
+        cancelReplyBtnSelector: '#cancel-reply',
+        // Deletes the comment instead of changing it's text
+        deleteComment: false
     };
 
     // Methods
@@ -42,6 +44,26 @@
         }
     };
 
+    
+    /**
+     * Edit comment
+     */
+    $(document).on('click', '[data-action="edit"]', function (event) {
+        event.preventDefault();
+        var $this = $(this);
+        $this.parents('[data-comment-content-id="' + $this.data('comment-id') + '"]').find('.comment-body').hide();
+        $this.parents('[data-comment-content-id="' + $this.data('comment-id') + '"]').find('.comment-body-edit').show();
+    });
+
+    /**
+     * Cancel edition
+     */
+    $(document).on('click', '[data-action="cancel-edition"]', function (event) {
+        event.preventDefault();
+        var $this = $(this);
+        $this.parents('[data-comment-content-id="' + $this.data('comment-id') + '"]').find('.comment-body-edit').hide();
+        $this.parents('[data-comment-content-id="' + $this.data('comment-id') + '"]').find('.comment-body').show();
+    });
 
     /**
      * Reply to comment
@@ -77,6 +99,7 @@
     /**
      * Delete comment event
      */
+
     $(document).on('click', '[data-action="delete"]', function (event) {
         event.preventDefault();
         var data = $.data(document, 'comment');
@@ -88,10 +111,20 @@
                 alert(error);
             },
             success: function (result, status, xhr) {
-                $this.parents('[data-comment-content-id="' + $this.data('comment-id') + '"]').find(data.contentSelector).text(result);
-                $this.parents(data.toolsSelector).remove();
+                if (data.deleteComment == true)
+                {
+                   $this.parents('[data-comment-content-id="' + $this.data('comment-id') + '"]').remove();
+                }
+                else
+                {
+                    $this.parents('[data-comment-content-id="' + $this.data('comment-id') + '"]').find(data.contentSelector).text(result);
+                    $this.parents(data.toolsSelector).remove();
+                }
+
             }
         });
     });
+
+
 
 })(window.jQuery);

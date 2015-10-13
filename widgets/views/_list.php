@@ -7,6 +7,8 @@ use yii\helpers\Url;
 /* @var $comment \yii2mod\comments\models\CommentModel */
 /* @var $comments array */
 /* @var $maxLevel null|integer coments max level */
+/* @var $encryptedEntity string */
+/* @var $pjax boolean */
 ?>
 <?php if (!empty($comments)) : ?>
     <?php foreach ($comments as $comment) : ?>
@@ -18,11 +20,14 @@ use yii\helpers\Url;
                 <div class="comment-details">
                     <?php if ($comment->isActive): ?>
                         <div class="comment-action-buttons">
-                            <?php if (Yii::$app->getUser()->can('admin')): ?>
-                                <?php echo Html::a('<span class="glyphicon glyphicon-trash"></span> Delete', '#', ['data' => ['action' => 'delete', 'url' => Url::to(['/comment/default/delete', 'id' => $comment->id]), 'comment-id' => $comment->id]]); ?>
+                            <?php if ($comment->canDelete()): ?>
+                                <?php echo Html::a('<span class="glyphicon glyphicon-trash"></span> '.Yii::t('app', 'Delete'), '#', ['data' => ['action' => 'delete', 'url' => Url::to(['/comment/default/delete', 'id' => $comment->id]), 'comment-id' => $comment->id]]); ?>
                             <?php endif; ?>
-                            <?php if (!Yii::$app->user->isGuest && ($comment->level < $maxLevel || is_null($maxLevel))): ?>
-                                <?php echo Html::a("<span class='glyphicon glyphicon-share-alt'></span> Reply", '#', ['class' => 'comment-reply', 'data' => ['action' => 'reply', 'comment-id' => $comment->id]]); ?>
+                            <?php if ($comment->canCreate() && ($comment->level < $maxLevel || is_null($maxLevel))): ?>
+                                <?php echo Html::a('<span class="glyphicon glyphicon-share-alt"></span> '.Yii::t('app', 'Reply'), '#', ['class' => 'comment-reply', 'data' => ['action' => 'reply', 'comment-id' => $comment->id]]); ?>
+                            <?php endif; ?>
+                            <?php if ($comment->canUpdate()): ?>
+                                <?php echo Html::a('<span class="glyphicon glyphicon-pencil"></span> '.Yii::t('app', 'Edit'), '#', ['class' => 'comment-edit', 'data' => ['action' => 'edit', 'comment-id' => $comment->id]]); ?>
                             <?php endif; ?>
                         </div>
                     <?php endif; ?>
@@ -35,11 +40,18 @@ use yii\helpers\Url;
                     <div class="comment-body">
                         <?php echo $comment->getContent(); ?>
                     </div>
+                    <?php if ($comment->canUpdate()): ?>
+                        <div class="comment-body-edit">
+                            <?php echo $this->render('_form', ['commentModel' => $comment, 'encryptedEntity' => $encryptedEntity, 'pjax' => $pjax]); ?>
+                        </div>
+                    <?php endif; ?>
+
+
                 </div>
             </div>
             <?php if ($comment->hasChildren()): ?>
                 <ul class="children">
-                    <?php echo $this->render('_list', ['comments' => $comment->children, 'maxLevel' => $maxLevel]) ?>
+                    <?php echo $this->render('_list', ['comments' => $comment->children, 'maxLevel' => $maxLevel, 'encryptedEntity' => $encryptedEntity, 'pjax' => $pjax]) ?>
                 </ul>
             <?php endif; ?>
         </li>

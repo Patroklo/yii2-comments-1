@@ -1,8 +1,9 @@
 <?php
 
-namespace yii2mod\comments;
+namespace yii2mod\comments\widgets;
 
 use yii\web\AssetBundle;
+use yii2mod\comments\Module;
 
 /**
  * Class CommentAsset
@@ -36,4 +37,25 @@ class CommentAsset extends AssetBundle
         'yii\web\JqueryAsset',
         'yii\web\YiiAsset'
     ];
+
+
+    public function init()
+    {
+        parent::init();
+
+        /** @var Module $module */
+        $module = \Yii::$app->getModule(Module::$name);
+        $assetMap = $module->assetMap;
+
+        $typeList = ['sourcePath', 'js', 'css', 'depends'];
+
+        foreach ($typeList as $type)
+        {
+            if (array_key_exists($type, $assetMap))
+            {
+                $this->$type = $assetMap[$type];
+            }
+        }
+
+    }
 }

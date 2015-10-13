@@ -2,7 +2,10 @@
 
 namespace yii2mod\comments;
 
+use yii\helpers\ArrayHelper;
 use yii2mod\comments\models\CommentModel;
+use yii2mod\comments\models\CommentQuery;
+use yii2mod\comments\models\CommentSearchModel;
 
 /**
  * Class Module
@@ -21,17 +24,51 @@ class Module extends \yii\base\Module
     public $userIdentityClass = null;
 
     /**
-     * @var string comment model class, by default its yii2mod\comments\models\CommentModel::className();
-     * You can override functions (getAuthor, getAvatar, ect) in your own comment model class
-     */
-    public $commentModelClass = null;
-
-    /**
      * @var string the namespace that controller classes are in.
      * This namespace will be used to load controller classes by prepending it to the controller
      * class name.
      */
     public $controllerNamespace = 'yii2mod\comments\controllers';
+    
+    /**
+     * Array that will store the models used in the package
+     * e.g. :
+     * [
+     *     'Comment' => 'frontend/models/comments/CommentModel'
+     * ]
+     *
+     * The classes defined here will be merged with getDefaultModels()
+     * having he manually defined by the user preference.
+     *
+     * @var array
+     */
+    public $modelMap = [];
+
+
+    /**
+     * Comments use RBA security to grant CRUD permissions
+     *
+     * @var boolean
+     */
+    public $useRbac = FALSE;
+
+
+    /**
+     * Array that will store the user defined assets for this package
+     * e.g. :
+     * [
+     *      'js' => ['file1'],
+     *      'css' => ['file2'],
+     *      'sourcePath' => 'url',
+     *      'depends' => ['file3', 'file4']
+     * ]
+     *
+     * If defined, will be used INSTEAD OF THE DEFAULT ONES
+     *
+     * @var array
+     */
+    public $assetMap = [];
+
 
     /**
      * Initializes the module.
@@ -47,10 +84,68 @@ class Module extends \yii\base\Module
         if ($this->userIdentityClass === null) {
             $this->userIdentityClass = \Yii::$app->getUser()->identityClass;
         }
-        if ($this->commentModelClass === null) {
-            $this->commentModelClass = CommentModel::className();
-        }
+
         parent::init();
+        
+        $this->defineModelClasses();
+        
     }
 
+    /**
+     * Merges the default and user defined model classes
+     * Also let's the developer to set new ones with the
+     * parameter being those the ones with most preference.
+     *
+     * @param array $modelClasses
+     */
+    public function defineModelClasses($modelClasses = [])
+    {
+        $this->modelMap = ArrayHelper::merge(
+            $this->getDefaultModels(),
+            $this->modelMap,
+            $modelClasses
+        );
+    }
+
+    /**
+     * Get default model classes
+     */
+    public function getDefaultModels()
+    {
+        return [
+            'Comment' => CommentModel::className(),
+            'CommentQuery' => CommentQuery::className(),
+            'CommentSearch' => CommentSearchModel::className()
+        ];
+    }
+
+    /**
+     * Get defined className of model
+     *
+     * Returns an string or array compatible
+     * with the Yii::createObject method.
+     *
+     * @param string $name
+     * @param array $config // You should never send an array with a key defined as "class" since this will
+     *                      // overwrite the main className defined by the system.
+     * @return string|array
+     */
+    public function model($name, $config = [])
+    {
+        $modelData = $this->modelMap[ucfirst($name)];
+
+        if (!empty($config)) {
+            if (is_string($modelData)) {
+                $modelData = ['class' => $modelData];
+            }
+
+            $modelData = ArrayHelper::merge(
+                $modelData,
+                $config
+            );
+        }
+
+        return $modelData;
+    }
+    
 }

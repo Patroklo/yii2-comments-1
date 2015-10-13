@@ -68,6 +68,10 @@
     border-color: transparent transparent transparent #184780;
 }
 
+.comments-list .comment-body-edit {
+    display:none;
+}
+
 .comments-list .children .comment:before {
     content: "";
     position: absolute;

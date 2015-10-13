@@ -16,6 +16,7 @@ $this->params['breadcrumbs'][] = $this->title;
 ?>
 <div class="comments-index">
 
+
     <h1><?php echo Html::encode($this->title) ?></h1>
     <?php Pjax::begin(['enablePushState' => false, 'timeout' => 5000]); ?>
     <?php echo GridView::widget([
@@ -39,7 +40,7 @@ $this->params['breadcrumbs'][] = $this->title;
                     return $model->getAuthorName();
                 },
                 'filter' => $commentModel::getListAuthorsNames(),
-                'filterInputOptions' => ['prompt' => 'Select Author', 'class' => 'form-control'],
+                'filterInputOptions' => ['prompt' => Yii::t('app', 'Select Author'), 'class' => 'form-control'],
             ],
             [
                 'class' => EditableColumn::className(),
@@ -56,7 +57,7 @@ $this->params['breadcrumbs'][] = $this->title;
                     ];
                 },
                 'filter' => CommentStatus::listData(),
-                'filterInputOptions' => ['prompt' => 'Select Status', 'class' => 'form-control'],
+                'filterInputOptions' => ['prompt' => Yii::t('app', 'Select Status'), 'class' => 'form-control'],
             ],
             [
                 'attribute' => 'createdAt',
@@ -66,7 +67,7 @@ $this->params['breadcrumbs'][] = $this->title;
                 'filter' => false,
             ],
             [
-                'header' => 'Actions',
+                'header' => Yii::t('app', 'Actions'),
                 'class' => 'yii\grid\ActionColumn',
                 'template' => '{update}{delete}',
             ]

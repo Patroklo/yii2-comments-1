@@ -5,6 +5,7 @@ namespace yii2mod\comments\controllers;
 use Yii;
 use yii\filters\VerbFilter;
 use yii\web\Controller;
+use yii\web\NotFoundHttpException;
 use yii2mod\comments\models\CommentModel;
 use yii2mod\comments\models\CommentSearchModel;
 use yii2mod\comments\Module;
@@ -67,9 +68,17 @@ class ManageController extends Controller
      */
     public function actionIndex()
     {
-        $searchModel = new CommentSearchModel();
+        /* @var $module Module */
+        $module = Yii::$app->getModule(Module::$name);
+        $commentSearchModelData = $module->model('commentSearch');
+        /** @var CommentSearchModel $searchModel */
+        $searchModel = Yii::createObject($commentSearchModelData);
+        
         $dataProvider = $searchModel->search(Yii::$app->request->queryParams);
-        $commentModel = Yii::$app->getModule(Module::$name)->commentModelClass;
+        
+        $commentModelData = $module->model('comment');
+        /** @var CommentModel $commentModel */
+        $commentModel = Yii::createObject($commentModelData);
 
         return $this->render($this->indexView, [
             'dataProvider' => $dataProvider,
@@ -89,7 +98,7 @@ class ManageController extends Controller
         $model = $this->findModel($id);
 
         if ($model->load(Yii::$app->request->post()) && $model->save()) {
-            Yii::$app->session->setFlash('success', 'Comment has been saved.');
+            Yii::$app->session->setFlash('success', Yii::t('app', 'Comment has been saved.'));
             return $this->redirect(['index']);
         }
 
@@ -108,7 +117,7 @@ class ManageController extends Controller
     public function actionDelete($id)
     {
         $this->findModel($id)->delete();
-        Yii::$app->session->setFlash('success', 'Comment has been deleted.');
+        Yii::$app->session->setFlash('success', Yii::t('app', 'Comment has been deleted.'));
         return $this->redirect(['index']);
     }
 
@@ -121,10 +130,15 @@ class ManageController extends Controller
      */
     protected function findModel($id)
     {
-        if (($model = CommentModel::findOne($id)) !== null) {
+        /* @var $module Module */
+        $module = Yii::$app->getModule(Module::$name);
+        $commentModelData = $module->model('comment');
+        /** @var CommentModel $commentModel */
+        $commentModel = Yii::createObject($commentModelData);
+        if (($model = $commentModel::findOne($id)) !== null) {
             return $model;
         } else {
-            throw new NotFoundHttpException('The requested page does not exist.');
+            throw new NotFoundHttpException(Yii::t('app', 'The requested page does not exist.'));
         }
     }
 }
