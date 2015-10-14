@@ -24,7 +24,9 @@
         <ol class="comments-list">
             <?php echo $this->render('_list', ['provider' => $provider, 'widget' => $widget]) ?>
         </ol>
-        <?php if ($commentModel->canCreate()) : ?>
+        <?php if ($commentModel->canCreate() && 
+            ($widget->allowAnonymousComments === TRUE or 
+                ($widget->allowAnonymousComments === FALSE && Yii::$app->getUser()->getIsGuest()))) : ?>
             <?php
 
             if ($widget->pjax === TRUE)

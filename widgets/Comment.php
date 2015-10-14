@@ -95,6 +95,14 @@ class Comment extends Widget
     ];
 
 
+    /**
+     * @var bool
+     * 
+     * Hides the new comment form if false when not loaded in the application
+     */
+    public $allowAnonymousComments = TRUE;
+
+
     public $encryptedEntity;
 
     /**
