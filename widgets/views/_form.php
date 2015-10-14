@@ -6,8 +6,8 @@ use yii\widgets\ActiveForm;
 
 /* @var $this \yii\web\View */
 /* @var $model \yii2mod\comments\models\CommentModel */
-/* @var $encryptedEntity string */
-/* @var $pjax boolean */
+/* @var $widget \yii2mod\comments\widgets\Comment */
+
 ?>
 <?php if ($commentModel->getIsNewRecord()): ?>
 <div class="comment-form-container">
@@ -32,13 +32,13 @@ use yii\widgets\ActiveForm;
             'validateOnBlur' => false
         ];
 
-        if ($pjax === TRUE)
+        if ($widget->pjax === TRUE)
         {
             $formOptions['options']['data-pjax'] = TRUE;
         }
 
         $form = ActiveForm::begin($formOptions); ?>
-        <?php echo Html::hiddenInput('entityData', $encryptedEntity); ?>
+        <?php echo Html::hiddenInput('entityData', $widget->encryptedEntity); ?>
         <?php if (Yii::$app->getUser()->getIsGuest()): ?>
             <?php echo $form->field($commentModel, 'anonymousUsername', ['template' => '{input}{error}'])->textInput(['placeholder' => Yii::t('app', 'Add a username...'), 'data' => ['comment' => 'anonymousUsername']]); ?>
         <?php endif; ?>

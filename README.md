@@ -73,7 +73,7 @@ Then you will be able to access the management section through the following URL
 <?php echo \yii2mod\comments\widgets\Comment::widget(['model' => $model]); ?>
 ```
 
-- use in view with entity and entityId strings
+- Use in view with entity and entityId strings
 
 ```php
 <?php echo \yii2mod\comments\widgets\Comment::widget(['entity' => '483f0e5a', 'entityId' => 149]); ?>

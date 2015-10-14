@@ -5,8 +5,11 @@ namespace yii2mod\comments\widgets;
 use Yii;
 use yii\base\InvalidConfigException;
 use yii\base\Widget;
+use yii\data\ActiveDataProvider;
+use yii\data\ArrayDataProvider;
 use yii\helpers\Json;
 use yii2mod\comments\models\CommentModel;
+use yii2mod\comments\models\enums\CommentStatus;
 use yii2mod\comments\Module;
 
 /**
@@ -72,8 +75,28 @@ class Comment extends Widget
      *
      */
     public $nestedBehavior = TRUE;
-    
-    
+
+
+    /** @var array */
+    public $pagination = [
+        'pageParam' => 'page',
+        'pageSizeParam' => 'per-page',
+        'pageSize' => 20,
+        'pageSizeLimit' => [1, 50],
+    ];
+
+
+    /** @var array */
+    public $sort = [
+        'attributes' => [
+            'createdAt' => SORT_ASC,
+            'parentId' => SORT_ASC
+        ],
+    ];
+
+
+    public $encryptedEntity;
+
     /**
      * Initializes the object.
      * This method is invoked at the end of the constructor after the object is initialized with the
@@ -81,9 +104,9 @@ class Comment extends Widget
      */
     public function init()
     {
-        if ($this->model === null && ($this->entity === null || $this->entityId === null))
+        if ($this->model === NULL && ($this->entity === NULL || $this->entityId === NULL))
         {
-            throw new InvalidConfigException(Yii::t('app', 'The "model" property must be set.'));
+            throw new InvalidConfigException(Yii::t('app', 'The "model" property or "entity" and "entityId" values must be set.'));
         }
         $this->registerAssets();
     }
@@ -128,16 +151,13 @@ class Comment extends Widget
             $this->entity = $commentModel::hashEntityClass($entityModel::className());
         }
 
-        //Get comment tree by entity and entityId
-        $comments = $commentModel::getTree($this->entity, $this->entityId, $this->showDeletedComments, $this->nestedBehavior, $this->maxLevel);
-
         // Add the basic data into the CommentModel in case we need it to
         // check for permissions
         $commentModel->entity = $this->entity;
         $commentModel->entityId = $this->entityId;
-        
+
         //Encrypt entity and entityId values
-        $encryptedEntity = urlencode(Yii::$app->getSecurity()->encryptByKey(Json::encode([
+        $this->encryptedEntity = urlencode(Yii::$app->getSecurity()->encryptByKey(Json::encode([
             'entity' => $this->entity,
             'entityId' => $this->entityId,
             'maxLevel' => $this->maxLevel,
@@ -148,12 +168,36 @@ class Comment extends Widget
             'nestedBehavior' => $this->nestedBehavior
         ]), $module::$name));
 
+        $query = CommentModel::find()
+            ->where(['entity' => $this->entity, 'entityId' => $this->entityId]);
+
+        if ($this->nestedBehavior === TRUE)
+        {
+            // Make eager subqueries to the max level defined in the widget
+            $children = array_fill(0, $this->maxLevel, 'children');
+            $query = $query->andWhere(['parentId' => NULL])
+                ->with([implode('.', $children), 'author']);
+        }
+        else
+        {
+            $query = $query->with(['author']);
+        }
+
+        if ($this->showDeletedComments === FALSE)
+        {
+            $query->andWhere(['!=', 'status', CommentStatus::DELETED]);
+        }
+
+        $dataProvider = new ArrayDataProvider([
+            'allModels' => $query->all(),
+            'sort' => $this->sort,
+            'pagination' => $this->pagination
+        ]);
+
         return $this->render('index', [
-            'comments' => $comments,
             'commentModel' => $commentModel,
-            'maxLevel' => $this->maxLevel,
-            'encryptedEntity' => $encryptedEntity,
-            'pjax' => $this->pjax
+            'provider' => $dataProvider,
+            'widget' => &$this
         ]);
     }
 }

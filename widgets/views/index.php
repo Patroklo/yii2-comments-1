@@ -1,10 +1,8 @@
 <?php
 /* @var $this \yii\web\View */
-/* @var $comments array */
 /* @var $commentModel \yii2mod\comments\models\CommentModel */
-/* @var $maxLevel null|integer coments max level */
-/* @var $encryptedEntity string */
-/* @var $pjax boolean */
+/* @var $widget \yii2mod\comments\widgets\Comment */
+
 ?>
 <div class="comments row">
     <div class="col-md-11 col-sm-11">
@@ -15,7 +13,7 @@
         </div>
         <?php
 
-        if ($pjax === TRUE)
+        if ($widget->pjax === TRUE)
         {
             \yii\widgets\Pjax::begin([
                 'id' => 'new_country',
@@ -24,21 +22,21 @@
         }
         ?>
         <ol class="comments-list">
-            <?php echo $this->render('_list', ['comments' => $comments, 'maxLevel' => $maxLevel, 'encryptedEntity' => $encryptedEntity, 'pjax' => $pjax]) ?>
+            <?php echo $this->render('_list', ['provider' => $provider, 'widget' => $widget]) ?>
         </ol>
         <?php if ($commentModel->canCreate()) : ?>
             <?php
 
-            if ($pjax === TRUE)
+            if ($widget->pjax === TRUE)
             {
                 echo \common\widgets\Alert::widget();
             }
 
-            echo $this->render('_form', ['commentModel' => $commentModel, 'encryptedEntity' => $encryptedEntity, 'pjax' => $pjax]);
+            echo $this->render('_form', ['commentModel' => $commentModel, 'widget' => $widget]);
             ?>
         <?php endif; ?>
         <?php
-        if ($pjax === TRUE)
+        if ($widget->pjax === TRUE)
         {
             \yii\widgets\Pjax::end();
         }
