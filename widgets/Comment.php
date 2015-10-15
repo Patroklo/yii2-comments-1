@@ -81,7 +81,7 @@ class Comment extends Widget
     public $pagination = [
         'pageParam' => 'page',
         'pageSizeParam' => 'per-page',
-        'pageSize' => 20,
+        'pageSize' => 0,
         'pageSizeLimit' => [1, 50],
     ];
 
@@ -98,7 +98,7 @@ class Comment extends Widget
     /**
      * @var bool
      * 
-     * Hides the new comment form if false when not loaded in the application
+     * Hides the new comment form if false when not logged in the application
      */
     public $allowAnonymousComments = TRUE;
 

@@ -9,7 +9,7 @@ use yii\helpers\Url;
 <?= \yii\widgets\ListView::widget([
     'dataProvider' => $provider,
     'itemOptions' => ['class' => 'item'],
-    'layout' => '{items}',
+    'layout' => "{items}\n{pager}",
     'itemView' => function ($model, $key, $index) use ($widget)
     {
         return $this->render('_item', ['model' => $model, 'widget' => $widget]);

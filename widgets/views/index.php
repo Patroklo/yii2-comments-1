@@ -24,24 +24,23 @@
         <ol class="comments-list">
             <?php echo $this->render('_list', ['provider' => $provider, 'widget' => $widget]) ?>
         </ol>
-        <?php if ($commentModel->canCreate() && 
-            ($widget->allowAnonymousComments === TRUE or 
-                ($widget->allowAnonymousComments === FALSE && Yii::$app->getUser()->getIsGuest()))) : ?>
-            <?php
-
+        <?php
+        if ($commentModel->canCreate() &&
+            (!Yii::$app->getUser()->getIsGuest() or ($widget->allowAnonymousComments === TRUE && Yii::$app->getUser()->getIsGuest()))
+        )
+        {
             if ($widget->pjax === TRUE)
             {
                 echo \common\widgets\Alert::widget();
             }
 
             echo $this->render('_form', ['commentModel' => $commentModel, 'widget' => $widget]);
-            ?>
-        <?php endif; ?>
-        <?php
+        }
         if ($widget->pjax === TRUE)
         {
             \yii\widgets\Pjax::end();
         }
+
         ?>
     </div>
 </div>

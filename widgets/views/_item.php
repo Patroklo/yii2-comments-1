@@ -16,7 +16,7 @@ use yii\helpers\Html;
                     <?php if ($model->canDelete()): ?>
                         <?php echo Html::a('<span class="glyphicon glyphicon-trash"></span> ' . Yii::t('app', 'Delete'), '#', ['data' => ['action' => 'delete', 'url' => \yii\helpers\Url::to(['/comment/default/delete', 'id' => $model->id]), 'comment-id' => $model->id]]); ?>
                     <?php endif; ?>
-                    <?php if ($model->canCreate() && (($model->level <= $widget->maxLevel || is_null($widget->maxLevel)) || $widget->nestedBehavior == FALSE)): ?>
+                    <?php if ($model->canCreate() && (($model->level < $widget->maxLevel || is_null($widget->maxLevel)) || $widget->nestedBehavior == FALSE)): ?>
                         <?php echo Html::a('<span class="glyphicon glyphicon-share-alt"></span> ' . Yii::t('app', 'Reply'), '#', ['class' => 'comment-reply', 'data' => ['action' => 'reply', 'comment-id' => $model->id]]); ?>
                     <?php endif; ?>
                     <?php if ($model->canUpdate()): ?>

@@ -134,11 +134,17 @@ There's also a list of optional parameters to define the behavior of the comment
 
 * **nestedBehavior** (optional, boolean) Default TRUE. If set as FALSE will show all comments in the same level instead of nesting the answers of each comment.
 
+* **allowAnonymousComments** (optional, boolean) Default TRUE. Hides the new comment form if set as False when not logged in the application.
+
+* **pagination** (optional, array) Sets the pagination options of the comment listView. For more info about pagination options: (HERE)[http://www.yiiframework.com/doc-2.0/yii-data-pagination.html]
+
+* **sort** (optional, array) Sorts the comments in the comment listView. For more info about sorting items in Yii2: (HERE)[http://www.yiiframework.com/doc-2.0/yii-data-sort.html]
+
 
 ## Extending the module:
 
 
-#### Extending Model files
+####ï¿½Extending Model files
 
 Depending on which ones you need, you can set the `modelMap` config property:
 
@@ -160,7 +166,7 @@ Depending on which ones you need, you can set the `modelMap` config property:
 Attention: keep in mind that if you are changing the `Comment` model, the new class should always extend the package's original `Comment` class.
 
 
-#### Attaching behaviors and event handlers
+####ï¿½Attaching behaviors and event handlers
  
 The package allows you to attach behavior or event handler to any model. To do this you can set model map like so:
 
